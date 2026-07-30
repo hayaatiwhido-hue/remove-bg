@@ -293,11 +293,10 @@
         const clipdropTokenInput = document.getElementById('clipdropToken');
         const btnSaveToken = document.getElementById('btnSaveToken');
 
-        // Chave pré-implantada automaticamente
-        const defaultEmbeddedToken = "f6f8bb0b46e8e82f3dce6b56637c2cf65272937074f646d0e3461506e726dab22c3f135bb31c5f303f81365ca9f62d6f";
-        
-        const savedToken = localStorage.getItem('clipdrop_api_token') || defaultEmbeddedToken;
-        clipdropTokenInput.value = savedToken;
+        // Força a chave nova da Clipdrop e limpa o cache antigo
+        const correctToken = "f6f8bb0b46e8e82f3dce6b56637c2cf65272937074f646d0e3461506e726dab22c3f135bb31c5f303f81365ca9f62d6f";
+        localStorage.setItem('clipdrop_api_token', correctToken);
+        clipdropTokenInput.value = correctToken;
 
         btnSaveToken.addEventListener('click', () => {
             const tokenValue = clipdropTokenInput.value.trim();
