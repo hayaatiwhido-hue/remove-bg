@@ -236,7 +236,7 @@
 
     <div class="container">
         <h1>Removedor HD eSports</h1>
-        <p class="subtitle">Recorte Nível PhotoRoom (Camisas Brancas e Placas)</p>
+        <p class="subtitle">Recorte HD (BRIA RMBG-1.4)</p>
 
         <!-- Seção Chave API -->
         <div class="token-card">
@@ -288,7 +288,7 @@
         const resultsGrid = document.getElementById('resultsGrid');
         const btnDownloadAll = document.getElementById('btnDownloadAll');
         const canvasWidthInput = document.getElementById('canvasWidth');
-        canvasHeightInput = document.getElementById('canvasHeight');
+        const canvasHeightInput = document.getElementById('canvasHeight');
         
         const hfTokenInput = document.getElementById('hfToken');
         const btnSaveToken = document.getElementById('btnSaveToken');
@@ -337,39 +337,31 @@
                 try {
                     const optimizedBlob = await prepareImageBlob(file);
 
-                    // Utiliza proxy direto via cors-anywhere/allorigins simples
+                    // Proxy transparente para bypass de CORS em chamadas diretas
                     const targetUrl = "https://api-inference.huggingface.co/models/briaai/RMBG-1.4";
-                    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
+                    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
 
                     const response = await fetch(proxyUrl, {
                         headers: {
-                            "Authorization": `Bearer ${token}`
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/octet-stream"
                         },
                         method: "POST",
                         body: optimizedBlob
                     });
 
                     if (!response.ok) {
-                        // Tenta chamada direta caso o proxy falhe
-                        const directResponse = await fetch(targetUrl, {
-                            headers: {
-                                "Authorization": `Bearer ${token}`,
-                                "Content-Type": "application/octet-stream"
-                            },
-                            method: "POST",
-                            body: optimizedBlob
-                        });
-
-                        if (!directResponse.ok) {
-                            const errText = await directResponse.text();
-                            throw new Error(`Erro API (${directResponse.status}): ${errText}`);
+                        if (response.status === 503) {
+                            statusText.innerText = "Aguardando servidor de IA aquecer (5s)...";
+                            await new Promise(r => setTimeout(r, 5000));
+                            i--; 
+                            continue;
                         }
-                        
-                        var noBgBlob = await directResponse.blob();
-                    } else {
-                        var noBgBlob = await response.blob();
+                        const errText = await response.text();
+                        throw new Error(`Erro na API (${response.status}): ${errText}`);
                     }
 
+                    const noBgBlob = await response.blob();
                     const finalBlob = await resizeToCanvas(noBgBlob, targetW, targetH);
 
                     processedImages.push({
@@ -399,7 +391,7 @@
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
-                    const maxDim = 800;
+                    const maxDim = 1500; // Mantém altíssima resolução HD
                     let w = img.width;
                     let h = img.height;
 
@@ -419,7 +411,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
 
-                    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+                    canvas.toBlob((blob) => resolve(blob), 'image/png');
                 };
                 img.src = URL.createObjectURL(file);
             });
@@ -455,7 +447,7 @@
             const img = document.createElement('img');
             img.src = URL.createObjectURL(blob);
 
-            const label = document.createElement('div');
+            const label = document.label = document.createElement('div');
             label.className = 'file-name';
             label.innerText = filename;
 
