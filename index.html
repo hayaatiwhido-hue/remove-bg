@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Removedor Pro eSports - Proteção Total</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script>
+    <title>Removedor de Fundo HD eSports</title>
+    <!-- Biblioteca de IA de Alta Precisão (Nível PhotoRoom) -->
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -78,10 +78,6 @@
             gap: 0.3rem;
         }
 
-        .form-group.full-width {
-            grid-column: span 2;
-        }
-
         label {
             font-size: 0.75rem;
             font-weight: 600;
@@ -89,7 +85,7 @@
             color: var(--text-muted);
         }
 
-        input, select {
+        input {
             background: var(--bg);
             border: 1px solid var(--border);
             color: var(--text);
@@ -206,8 +202,8 @@
 <body>
 
     <div class="container">
-        <h1>Removedor eSports Pro</h1>
-        <p class="subtitle">Segmentação IA com preenchimento sólido de uniformes e placas</p>
+        <h1>Removedor eSports HD</h1>
+        <p class="subtitle">Recorte perfeito de uniformes brancos e placas de jogadores</p>
 
         <div class="grid-inputs">
             <div class="form-group">
@@ -228,7 +224,7 @@
 
         <div class="progress-box" id="progressBox">
             <div class="progress-text">
-                <span id="statusText">Iniciando IA...</span>
+                <span id="statusText">Processando com IA...</span>
                 <span id="progressPercent">0%</span>
             </div>
             <div class="progress-bar-bg">
@@ -252,20 +248,7 @@
         const canvasWidthInput = document.getElementById('canvasWidth');
         const canvasHeightInput = document.getElementById('canvasHeight');
 
-        let net = null;
         let processedImages = [];
-
-        async function loadModel() {
-            if (!net) {
-                statusText.innerText = "Carregando modelo de IA...";
-                net = await bodyPix.load({
-                    architecture: 'MobileNetV1',
-                    outputStride: 16,
-                    multiplier: 0.75,
-                    quantBytes: 2
-                });
-            }
-        }
 
         fileInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
@@ -279,39 +262,44 @@
             const targetW = parseInt(canvasWidthInput.value) || 1500;
             const targetH = parseInt(canvasHeightInput.value) || 1500;
 
-            try {
-                await loadModel();
+            const config = {
+                publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.5/dist/",
+                model: "isnet",
+                progress: (key, current, total) => {
+                    if (total > 0) {
+                        const p = Math.round((current / total) * 100);
+                        statusText.innerText = `Carregando IA (${key.split('/')[0]}): ${p}%`;
+                    }
+                }
+            };
 
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    statusText.innerText = `Processando foto ${i + 1} de ${files.length}...`;
-                    updateProgress(((i + 0.2) / files.length) * 100);
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                statusText.innerText = `Recortando jogador ${i + 1} de ${files.length}...`;
+                updateProgress(((i + 0.1) / files.length) * 100);
 
-                    const img = await loadImage(file);
+                try {
+                    // Recorte de precisão via modelo ISNet
+                    const noBgBlob = await imglyRemoveBackground(file, config);
                     
-                    const segmentation = await net.segmentPerson(img, {
-                        internalResolution: 'medium',
-                        segmentationThreshold: 0.5
-                    });
+                    // Ajustar no Canvas mantendo proporção e redimensionamento 1500x1500
+                    const finalBlob = await resizeToCanvas(noBgBlob, targetW, targetH);
 
-                    const croppedBlob = await processSolidMask(img, segmentation, targetW, targetH);
-                    
                     processedImages.push({
                         name: file.name.replace(/\.[^/.]+$/, "") + "_no_bg.png",
-                        blob: croppedBlob
+                        blob: finalBlob
                     });
 
-                    renderPreview(croppedBlob, file.name);
+                    renderPreview(finalBlob, file.name);
                     updateProgress(((i + 1) / files.length) * 100);
+                } catch (error) {
+                    console.error("Erro na imagem:", file.name, error);
+                    alert(`Falha ao processar ${file.name}. Tentando próxima...`);
                 }
-
-                statusText.innerText = "Processamento Concluído com Sucesso!";
-                btnDownloadAll.style.display = 'block';
-
-            } catch (err) {
-                console.error(err);
-                alert("Erro ao processar: " + err.message);
             }
+
+            statusText.innerText = "Processamento Concluído!";
+            btnDownloadAll.style.display = 'block';
         });
 
         function updateProgress(percent) {
@@ -320,88 +308,23 @@
             progressPercent.innerText = p + '%';
         }
 
-        function loadImage(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = URL.createObjectURL(file);
-            });
-        }
-
-        function processSolidMask(img, segmentation, targetW, targetH) {
+        function resizeToCanvas(blob, targetW, targetH) {
             return new Promise((resolve) => {
-                const w = img.width;
-                const h = img.height;
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                    const ctx = canvas.getContext('2d');
 
-                // 1. Criar matriz binária da pessoa
-                const mask = new Uint8Array(w * h);
-                for (let i = 0; i < segmentation.data.length; i++) {
-                    mask[i] = segmentation.data[i] ? 1 : 0;
-                }
+                    const scale = Math.min(targetW / img.width, targetH / img.height);
+                    const x = (targetW / 2) - (img.width / 2) * scale;
+                    const y = (targetH / 2) - (img.height / 2) * scale;
 
-                // 2. Preenchimento de buracos internos (Hole Filling / Flood Fill Inverso)
-                // Encontra todo o fundo externo conectado às bordas da imagem
-                const outerBg = new Uint8Array(w * h);
-                const queue = [];
-
-                // Posições de partida: todas as bordas externas da imagem
-                for (let x = 0; x < w; x++) {
-                    if (mask[x] === 0) queue.push(x, 0);
-                    if (mask[(h - 1) * w + x] === 0) queue.push(x, h - 1);
-                }
-                for (let y = 0; y < h; y++) {
-                    if (mask[y * w] === 0) queue.push(0, y);
-                    if (mask[y * w + (w - 1)] === 0) queue.push(w - 1, y);
-                }
-
-                let head = 0;
-                while (head < queue.length) {
-                    const x = queue[head++];
-                    const y = queue[head++];
-                    const idx = y * w + x;
-
-                    if (outerBg[idx]) continue;
-                    outerBg[idx] = 1;
-
-                    // Expandir vizinhos se não forem da pessoa
-                    if (x > 0 && !outerBg[idx - 1] && mask[idx - 1] === 0) queue.push(x - 1, y);
-                    if (x < w - 1 && !outerBg[idx + 1] && mask[idx + 1] === 0) queue.push(x + 1, y);
-                    if (y > 0 && !outerBg[idx - w] && mask[idx - w] === 0) queue.push(x, y - 1);
-                    if (y < h - 1 && !outerBg[idx + w] && mask[idx + w] === 0) queue.push(x, y + 1);
-                }
-
-                // Tudo o que NÃO for outerBg é considerado PARTE DO JOGADOR (incluindo placas e camisas)
-                const origCanvas = document.createElement('canvas');
-                origCanvas.width = w;
-                origCanvas.height = h;
-                const ctx = origCanvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-
-                const imgData = ctx.getImageData(0, 0, w, h);
-                const data = imgData.data;
-
-                for (let i = 0; i < w * h; i++) {
-                    if (outerBg[i] === 1) {
-                        data[i * 4 + 3] = 0; // Transparente apenas no fundo REAL de fora
-                    }
-                }
-
-                ctx.putImageData(imgData, 0, 0);
-
-                // Redimensionamento final 1500x1500px
-                const finalCanvas = document.createElement('canvas');
-                finalCanvas.width = targetW;
-                finalCanvas.height = targetH;
-                const finalCtx = finalCanvas.getContext('2d');
-
-                const scale = Math.min(targetW / w, targetH / h);
-                const x = (targetW / 2) - (w / 2) * scale;
-                const y = (targetH / 2) - (h / 2) * scale;
-
-                finalCtx.drawImage(origCanvas, x, y, w * scale, h * scale);
-
-                finalCanvas.toBlob((blob) => resolve(blob), 'image/png');
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    canvas.toBlob((res) => resolve(res), 'image/png');
+                };
+                img.src = URL.createObjectURL(blob);
             });
         }
 
@@ -434,7 +357,7 @@
             const content = await zip.generateAsync({ type: "blob" });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(content);
-            a.download = "jogadores_recortados.zip";
+            a.download = "jogadores_recortados_hd.zip";
             a.click();
         });
     </script>
