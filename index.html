@@ -288,18 +288,16 @@
         const resultsGrid = document.getElementById('resultsGrid');
         const btnDownloadAll = document.getElementById('btnDownloadAll');
         const canvasWidthInput = document.getElementById('canvasWidth');
-        const canvasHeightInput = document.getElementById('canvasHeight');
+        canvasHeightInput = document.getElementById('canvasHeight');
         
         const hfTokenInput = document.getElementById('hfToken');
         const btnSaveToken = document.getElementById('btnSaveToken');
 
-        // Carrega a chave salva previamente no navegador
         const savedToken = localStorage.getItem('hf_token_bg');
         if (savedToken) {
             hfTokenInput.value = savedToken;
         }
 
-        // Ação do botão "Salvar Chave"
         btnSaveToken.addEventListener('click', () => {
             const tokenValue = hfTokenInput.value.trim();
             if (tokenValue.length > 0) {
@@ -339,28 +337,39 @@
                 try {
                     const optimizedBlob = await prepareImageBlob(file);
 
-                    // Comunicação direta com a rota interna configurada no vercel.json
-                    const response = await fetch("/api/ia", {
+                    // Utiliza proxy direto via cors-anywhere/allorigins simples
+                    const targetUrl = "https://api-inference.huggingface.co/models/briaai/RMBG-1.4";
+                    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
+
+                    const response = await fetch(proxyUrl, {
                         headers: {
-                            "Authorization": `Bearer ${token}`,
-                            "Content-Type": "application/octet-stream"
+                            "Authorization": `Bearer ${token}`
                         },
                         method: "POST",
                         body: optimizedBlob
                     });
 
                     if (!response.ok) {
-                        if (response.status === 503) {
-                            statusText.innerText = "Aguardando servidor de IA aquecer (5s)...";
-                            await new Promise(r => setTimeout(r, 5000));
-                            i--; 
-                            continue;
+                        // Tenta chamada direta caso o proxy falhe
+                        const directResponse = await fetch(targetUrl, {
+                            headers: {
+                                "Authorization": `Bearer ${token}`,
+                                "Content-Type": "application/octet-stream"
+                            },
+                            method: "POST",
+                            body: optimizedBlob
+                        });
+
+                        if (!directResponse.ok) {
+                            const errText = await directResponse.text();
+                            throw new Error(`Erro API (${directResponse.status}): ${errText}`);
                         }
-                        const errText = await response.text();
-                        throw new Error(`Erro na API (${response.status}): ${errText}`);
+                        
+                        var noBgBlob = await directResponse.blob();
+                    } else {
+                        var noBgBlob = await response.blob();
                     }
 
-                    const noBgBlob = await response.blob();
                     const finalBlob = await resizeToCanvas(noBgBlob, targetW, targetH);
 
                     processedImages.push({
@@ -390,7 +399,7 @@
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
-                    const maxDim = 1000;
+                    const maxDim = 800;
                     let w = img.width;
                     let h = img.height;
 
@@ -410,7 +419,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
 
-                    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+                    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
                 };
                 img.src = URL.createObjectURL(file);
             });
