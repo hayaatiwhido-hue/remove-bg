@@ -1,440 +1,397 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ajustador e Removedor de Fundo HD Pro</title>
-  <style>
-    :root {
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: #334155;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Removedor de Fundo e Redimensionador eSports IA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1.5rem 1rem;
-    }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 1rem;
+        }
 
-    .container {
-      max-width: 800px;
-      width: 100%;
-      background: var(--surface);
-      padding: 1.5rem;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
 
-    h1 {
-      font-size: 1.6rem;
-      margin-bottom: 0.5rem;
-      text-align: center;
-      background: linear-gradient(135deg, #a855f7, #6366f1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+            background: linear-gradient(to right, #c084fc, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    p.subtitle {
-      text-align: center;
-      color: var(--text-muted);
-      margin-bottom: 1.5rem;
-      font-size: 0.85rem;
-    }
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
 
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      background: rgba(0,0,0,0.2);
-      padding: 1rem;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 12px;
+        }
 
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
 
-    label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
+        .form-group.full-width {
+            grid-column: span 2;
+        }
 
-    input[type="number"], select {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.65rem;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      outline: none;
-    }
+        label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
 
-    .file-box {
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
+        input, select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
 
-    input[type="file"] {
-      width: 100%;
-      padding: 1.2rem;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      color: white;
-      font-weight: bold;
-      border-radius: 12px;
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-    }
+        .file-upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            color: white;
+            padding: 0.9rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
 
-    .progress-section {
-      display: none;
-      margin-bottom: 1.5rem;
-    }
+        #fileInput {
+            display: none;
+        }
 
-    .progress-bar-container {
-      width: 100%;
-      height: 8px;
-      background: var(--bg);
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 0.5rem;
-    }
+        .progress-box {
+            margin-top: 1.5rem;
+            display: none;
+        }
 
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #6366f1, #a855f7);
-      transition: width 0.3s ease;
-    }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-muted);
+        }
 
-    .status-text {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-    }
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
 
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 1rem;
-      max-height: 380px;
-      overflow-y: auto;
-    }
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
 
-    .card {
-      background: var(--bg);
-      border-radius: 8px;
-      padding: 0.5rem;
-      border: 1px solid var(--border);
-    }
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
 
-    .card-preview {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 6px;
-      background-image: linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
-                        linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
-                        linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
-                        linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
-      background-size: 16px 16px;
-      background-color: #1a1a1a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
+        .result-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-    .card-preview img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
+        .preview-box {
+            width: 100%;
+            aspect-ratio: 1;
+            background-image: 
+                linear-gradient(45deg, #2d3748 25%, transparent 25%), 
+                linear-gradient(-45deg, #2d3748 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #2d3748 75%), 
+                linear-gradient(-45deg, transparent 75%, #2d3748 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: #1a202c;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-    .card-name {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 0.4rem;
-    }
+        .preview-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
 
-    .btn-download-all {
-      width: 100%;
-      padding: 1rem;
-      background: #22c55e;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 1.5rem;
-      display: none;
-    }
-  </style>
+        .file-name {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+            word-break: break-all;
+            text-align: center;
+        }
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+        .btn-download-all {
+            width: 100%;
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>Redimensionador & Removedor HD Pro</h1>
-    <p class="subtitle">Recorte sem bordas brancas e suporte a roupas claras.</p>
+    <div class="container">
+        <h1>Removedor IA & Redimensionador</h1>
+        <p class="subtitle">Recorte perfeito com Inteligência Artificial sem bordas duras</p>
 
-    <div class="controls-grid">
-      <div class="input-group">
-        <label>Formato Canvas</label>
-        <select id="preset" onchange="toggleDimensions()">
-          <option value="square">Quadrado (1080 x 1080)</option>
-          <option value="story">Stories (1080 x 1920)</option>
-          <option value="custom">Personalizado</option>
-        </select>
-      </div>
+        <div class="grid-inputs">
+            <div class="form-group full-width">
+                <label>Formato do Canvas</label>
+                <select id="canvasPreset">
+                    <option value="custom">Personalizado</option>
+                    <option value="1500x1500" selected>1500 x 1500 px (Quadrado HD)</option>
+                    <option value="1080x1080">1080 x 1080 px (Instagram Feed)</option>
+                    <option value="1080x1920">1080 x 1920 px (Instagram Stories)</option>
+                </select>
+            </div>
 
-      <div class="input-group">
-        <label>Largura (px)</label>
-        <input type="number" id="canvas-width" value="1500">
-      </div>
+            <div class="form-group">
+                <label>Largura (px)</label>
+                <input type="number" id="canvasWidth" value="1500">
+            </div>
 
-      <div class="input-group">
-        <label>Altura (px)</label>
-        <input type="number" id="canvas-height" value="1500">
-      </div>
+            <div class="form-group">
+                <label>Altura (px)</label>
+                <input type="number" id="canvasHeight" value="1500">
+            </div>
+        </div>
+
+        <label for="fileInput" class="file-upload-btn">
+            📂 Escolher fotos dos Jogadores
+        </label>
+        <input type="file" id="fileInput" multiple accept="image/*">
+
+        <div class="progress-box" id="progressBox">
+            <div class="progress-text">
+                <span id="statusText">Carregando Modelo de IA...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="results-grid" id="resultsGrid"></div>
+
+        <button class="btn-download-all" id="btnDownloadAll">⚡ Baixar Fotos Recortadas (.ZIP)</button>
     </div>
 
-    <div class="file-box">
-      <input type="file" id="file-input" multiple accept="image/*">
-    </div>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const progressBox = document.getElementById('progressBox');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+        const progressPercent = document.getElementById('progressPercent');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const btnDownloadAll = document.getElementById('btnDownloadAll');
+        const canvasPreset = document.getElementById('canvasPreset');
+        const canvasWidthInput = document.getElementById('canvasWidth');
+        const canvasHeightInput = document.getElementById('canvasHeight');
 
-    <div class="progress-section" id="progress-section">
-      <div class="status-text">
-        <span id="status-label">Iniciando motor de IA...</span>
-        <span id="status-count">0 / 0</span>
-      </div>
-      <div class="progress-bar-container">
-        <div class="progress-bar" id="progress-bar"></div>
-      </div>
-    </div>
+        let processedImages = [];
 
-    <div class="gallery" id="gallery"></div>
-
-    <button class="btn-download-all" id="btn-download" onclick="downloadAll()">
-      Baixar Fotos Recortadas (.ZIP)
-    </button>
-  </div>
-
-  <script>
-    let processedFiles = [];
-    let selfieSegmentation = null;
-
-    function initEngine() {
-      return new Promise((resolve) => {
-        if (selfieSegmentation) return resolve();
-        selfieSegmentation = new SelfieSegmentation({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+        canvasPreset.addEventListener('change', () => {
+            const val = canvasPreset.value;
+            if (val !== 'custom') {
+                const [w, h] = val.split('x');
+                canvasWidthInput.value = w;
+                canvasHeightInput.value = h;
+            }
         });
-        selfieSegmentation.setOptions({ modelSelection: 1 });
-        selfieSegmentation.initialize().then(resolve);
-      });
-    }
 
-    document.getElementById('file-input').addEventListener('change', (e) => {
-      if (e.target.files.length) handleFiles(e.target.files);
-    });
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
 
-    function toggleDimensions() {
-      const preset = document.getElementById('preset').value;
-      const wInput = document.getElementById('canvas-width');
-      const hInput = document.getElementById('canvas-height');
+            resultsGrid.innerHTML = '';
+            processedImages = [];
+            btnDownloadAll.style.display = 'none';
+            progressBox.style.display = 'block';
 
-      if (preset === 'square') {
-        wInput.value = 1080; hInput.value = 1080;
-      } else if (preset === 'story') {
-        wInput.value = 1080; hInput.value = 1920;
-      }
-    }
+            const targetW = parseInt(canvasWidthInput.value) || 1500;
+            const targetH = parseInt(canvasHeightInput.value) || 1500;
 
-    async function handleFiles(files) {
-      processedFiles = [];
-      document.getElementById('gallery').innerHTML = '';
-      document.getElementById('btn-download').style.display = 'none';
-      
-      const progressSection = document.getElementById('progress-section');
-      const progressBar = document.getElementById('progress-bar');
-      const statusLabel = document.getElementById('status-label');
-      const statusCount = document.getElementById('status-count');
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                statusText.innerText = `Processando foto ${i + 1} de ${files.length} com IA...`;
+                updateProgress(((i) / files.length) * 100);
 
-      progressSection.style.display = 'block';
-      progressBar.style.width = '0%';
+                try {
+                    // Remoção com IA
+                    const blobOut = await imglyRemoveBackground(file, {
+                        progress: (key, current, total) => {
+                            if (key.includes('compute')) {
+                                const subPercent = Math.round((current / total) * 100);
+                                progressPercent.innerText = `${Math.round(((i + (subPercent/100)) / files.length) * 100)}%`;
+                            }
+                        }
+                    });
 
-      const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.name.match(/\.(jpg|jpeg|png|webp)$/i));
-      const total = validFiles.length;
+                    // Redimensionamento no Canvas
+                    const finalBlob = await resizeToCanvas(blobOut, targetW, targetH);
+                    processedImages.push({
+                        name: file.name.replace(/\.[^/.]+$/, "") + "_no_bg.png",
+                        blob: finalBlob
+                    });
 
-      statusLabel.innerText = "Carregando motor...";
-      await initEngine();
+                    renderPreview(finalBlob, file.name);
 
-      for (let i = 0; i < total; i++) {
-        const file = validFiles[i];
+                } catch (err) {
+                    console.error("Erro ao processar imagem:", err);
+                    alert("Erro ao processar " + file.name);
+                }
+            }
 
-        statusLabel.innerText = `Processando: ${file.name}`;
-        statusCount.innerText = `${i + 1} / ${total}`;
+            updateProgress(100);
+            statusText.innerText = "Processamento com IA concluído!";
+            if (processedImages.length > 0) {
+                btnDownloadAll.style.display = 'block';
+            }
+        });
 
-        try {
-          const noBgBlob = await processImageSmoothEdge(file);
-          const finalBlob = await fitInCanvas(noBgBlob);
-          
-          processedFiles.push({ name: file.name, blob: finalBlob });
-          addPreviewCard(file.name, finalBlob);
-        } catch (err) {
-          console.error("Erro:", err);
-          statusLabel.innerText = `Erro em ${file.name}`;
+        function updateProgress(percent) {
+            const p = Math.round(percent);
+            progressBar.style.width = p + '%';
+            progressPercent.innerText = p + '%';
         }
 
-        progressBar.style.width = `${((i + 1) / total) * 100}%`;
-      }
+        function resizeToCanvas(blob, width, height) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
 
-      statusLabel.innerText = 'Processamento concluído!';
-      if (processedFiles.length > 0) {
-        document.getElementById('btn-download').style.display = 'block';
-      }
-    }
+                    // Centralizar e manter a proporção
+                    const scale = Math.min(width / img.width, height / img.height);
+                    const x = (width / 2) - (img.width / 2) * scale;
+                    const y = (height / 2) - (img.height / 2) * scale;
 
-    function processImageSmoothEdge(file) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          selfieSegmentation.onResults((results) => {
-            const width = img.width;
-            const height = img.height;
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
 
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = width;
-            maskCanvas.height = height;
-            const maskCtx = maskCanvas.getContext('2d');
+                    canvas.toBlob((b) => resolve(b), 'image/png');
+                };
+                img.src = URL.createObjectURL(blob);
+            });
+        }
 
-            maskCtx.drawImage(results.segmentationMask, 0, 0, width, height);
+        function renderPreview(blob, filename) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
 
-            const maskData = maskCtx.getImageData(0, 0, width, height);
-            const data = maskData.data;
+            const box = document.createElement('div');
+            box.className = 'preview-box';
 
-            // Curva suave de Alpha Matte para evitar o corte abrupto de camisas brancas
-            for (let i = 0; i < data.length; i += 4) {
-              let val = data[i]; 
-              // Suavização das bordas sem deixar aureola
-              if (val < 70) {
-                val = 0;
-              } else if (val > 200) {
-                val = 255;
-              } else {
-                val = Math.pow((val - 70) / 130, 1.5) * 255;
-              }
-              data[i + 3] = val;
-            }
-            maskCtx.putImageData(maskData, 0, 0);
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(blob);
 
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = width;
-            finalCanvas.height = height;
-            finalCtx = finalCanvas.getContext('2d');
+            const label = document.createElement('div');
+            label.className = 'file-name';
+            label.innerText = filename;
 
-            finalCtx.drawImage(img, 0, 0);
-            finalCtx.globalCompositeOperation = 'destination-in';
-            finalCtx.drawImage(maskCanvas, 0, 0);
+            box.appendChild(img);
+            card.appendChild(box);
+            card.appendChild(label);
+            resultsGrid.appendChild(card);
+        }
 
-            finalCanvas.toBlob(resolve, 'image/png');
-          });
+        btnDownloadAll.addEventListener('click', async () => {
+            const zip = new JSZip();
+            processedImages.forEach(img => {
+                zip.file(img.name, img.blob);
+            });
 
-          selfieSegmentation.send({ image: img });
-        };
-        img.src = URL.createObjectURL(file);
-      });
-    }
-
-    function fitInCanvas(blob) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvasW = parseInt(document.getElementById('canvas-width').value) || 1500;
-          const canvasH = parseInt(document.getElementById('canvas-height').value) || 1500;
-
-          const canvas = document.createElement('canvas');
-          canvas.width = canvasW;
-          canvas.height = canvasH;
-          const ctx = canvas.getContext('2d');
-
-          ctx.clearRect(0, 0, canvasW, canvasH);
-
-          const scale = Math.min(canvasW / img.width, canvasH / img.height);
-          const newW = img.width * scale;
-          const newH = img.height * scale;
-          const posX = (canvasW - newW) / 2;
-          const posY = (canvasH - newH) / 2;
-
-          ctx.drawImage(img, posX, posY, newW, newH);
-          canvas.toBlob(resolve, 'image/png');
-        };
-        img.src = URL.createObjectURL(blob);
-      });
-    }
-
-    function addPreviewCard(fileName, blob) {
-      const url = URL.createObjectURL(blob);
-      const card = document.createElement('div');
-      card.className = 'card';
-      
-      const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-      const finalName = `${nameWithoutExt}.png`;
-
-      card.innerHTML = `
-        <div class="card-preview">
-          <img src="${url}" alt="${finalName}">
-        </div>
-        <div class="card-name" title="${finalName}">${finalName}</div>
-      `;
-      document.getElementById('gallery').appendChild(card);
-    }
-
-    async function downloadAll() {
-      const zip = new JSZip();
-
-      processedFiles.forEach(fileObj => {
-        const nameWithoutExt = fileObj.name.substring(0, fileObj.name.lastIndexOf('.')) || fileObj.name;
-        const finalName = `${nameWithoutExt}.png`;
-        zip.file(finalName, fileObj.blob);
-      });
-
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(zipBlob);
-      a.download = "fotos_sem_fundo.zip";
-      a.click();
-    }
-  </script>
+            const content = await zip.generateAsync({ type: "blob" });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = "jogadores_sem_fundo.zip";
+            a.click();
+        });
+    </script>
 </body>
 </html>
