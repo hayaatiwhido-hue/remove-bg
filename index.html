@@ -240,7 +240,7 @@
 <body>
 
     <div class="container">
-        <h1>Removedor HD eSports - Jotinha</h1>
+        <h1>Removedor HD eSports</h1>
         <p class="subtitle">Recorte HD SDK (BRIA RMBG-1.4)</p>
 
         <!-- Seção Chave API -->
@@ -343,10 +343,9 @@
                 updateProgress((i / files.length) * 100);
 
                 try {
-                    // Otimiza levemente o arquivo para envio rápido sem perder nitidez
                     const optimizedBlob = await prepareImageBlob(file);
 
-                    // Usa o SDK oficial integrado para contornar problemas de fetch direto
+                    // Executa a segmentação via SDK oficial
                     const noBgBlob = await hf.imageSegmentation({
                         model: "briaai/RMBG-1.4",
                         data: optimizedBlob,
