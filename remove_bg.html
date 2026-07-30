@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustador e Removedor de Fundo HD Pro</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--surface);
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      background: rgba(0,0,0,0.2);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    input[type="number"], select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.65rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .file-box {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 1.2rem;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .progress-section {
+      display: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6366f1, #a855f7);
+      transition: width 0.3s ease;
+    }
+
+    .status-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .card-preview {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background-image: linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
+                        linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
+                        linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+      background-size: 16px 16px;
+      background-color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .card-name {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 0.4rem;
+    }
+
+    .btn-download-all {
+      width: 100%;
+      padding: 1rem;
+      background: #22c55e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      display: none;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Redimensionador & Removedor HD Pro</h1>
+    <p class="subtitle">Recorte sem bordas brancas e suporte a roupas claras.</p>
+
+    <div class="controls-grid">
+      <div class="input-group">
+        <label>Formato Canvas</label>
+        <select id="preset" onchange="toggleDimensions()">
+          <option value="square">Quadrado (1080 x 1080)</option>
+          <option value="story">Stories (1080 x 1920)</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Largura (px)</label>
+        <input type="number" id="canvas-width" value="1500">
+      </div>
+
+      <div class="input-group">
+        <label>Altura (px)</label>
+        <input type="number" id="canvas-height" value="1500">
+      </div>
+    </div>
+
+    <div class="file-box">
+      <input type="file" id="file-input" multiple accept="image/*">
+    </div>
+
+    <div class="progress-section" id="progress-section">
+      <div class="status-text">
+        <span id="status-label">Iniciando motor de IA...</span>
+        <span id="status-count">0 / 0</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <button class="btn-download-all" id="btn-download" onclick="downloadAll()">
+      Baixar Fotos Recortadas (.ZIP)
+    </button>
+  </div>
+
+  <script>
+    let processedFiles = [];
+    let selfieSegmentation = null;
+
+    function initEngine() {
+      return new Promise((resolve) => {
+        if (selfieSegmentation) return resolve();
+        selfieSegmentation = new SelfieSegmentation({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+        });
+        selfieSegmentation.setOptions({ modelSelection: 1 });
+        selfieSegmentation.initialize().then(resolve);
+      });
+    }
+
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      if (e.target.files.length) handleFiles(e.target.files);
+    });
+
+    function toggleDimensions() {
+      const preset = document.getElementById('preset').value;
+      const wInput = document.getElementById('canvas-width');
+      const hInput = document.getElementById('canvas-height');
+
+      if (preset === 'square') {
+        wInput.value = 1080; hInput.value = 1080;
+      } else if (preset === 'story') {
+        wInput.value = 1080; hInput.value = 1920;
+      }
+    }
+
+    async function handleFiles(files) {
+      processedFiles = [];
+      document.getElementById('gallery').innerHTML = '';
+      document.getElementById('btn-download').style.display = 'none';
+      
+      const progressSection = document.getElementById('progress-section');
+      const progressBar = document.getElementById('progress-bar');
+      const statusLabel = document.getElementById('status-label');
+      const statusCount = document.getElementById('status-count');
+
+      progressSection.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.name.match(/\.(jpg|jpeg|png|webp)$/i));
+      const total = validFiles.length;
+
+      statusLabel.innerText = "Carregando motor...";
+      await initEngine();
+
+      for (let i = 0; i < total; i++) {
+        const file = validFiles[i];
+
+        statusLabel.innerText = `Processando: ${file.name}`;
+        statusCount.innerText = `${i + 1} / ${total}`;
+
+        try {
+          const noBgBlob = await processImageSmoothEdge(file);
+          const finalBlob = await fitInCanvas(noBgBlob);
+          
+          processedFiles.push({ name: file.name, blob: finalBlob });
+          addPreviewCard(file.name, finalBlob);
+        } catch (err) {
+          console.error("Erro:", err);
+          statusLabel.innerText = `Erro em ${file.name}`;
+        }
+
+        progressBar.style.width = `${((i + 1) / total) * 100}%`;
+      }
+
+      statusLabel.innerText = 'Processamento concluído!';
+      if (processedFiles.length > 0) {
+        document.getElementById('btn-download').style.display = 'block';
+      }
+    }
+
+    function processImageSmoothEdge(file) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          selfieSegmentation.onResults((results) => {
+            const width = img.width;
+            const height = img.height;
+
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = width;
+            maskCanvas.height = height;
+            const maskCtx = maskCanvas.getContext('2d');
+
+            maskCtx.drawImage(results.segmentationMask, 0, 0, width, height);
+
+            const maskData = maskCtx.getImageData(0, 0, width, height);
+            const data = maskData.data;
+
+            // Curva suave de Alpha Matte para evitar o corte abrupto de camisas brancas
+            for (let i = 0; i < data.length; i += 4) {
+              let val = data[i]; 
+              // Suavização das bordas sem deixar aureola
+              if (val < 70) {
+                val = 0;
+              } else if (val > 200) {
+                val = 255;
+              } else {
+                val = Math.pow((val - 70) / 130, 1.5) * 255;
+              }
+              data[i + 3] = val;
+            }
+            maskCtx.putImageData(maskData, 0, 0);
+
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = width;
+            finalCanvas.height = height;
+            finalCtx = finalCanvas.getContext('2d');
+
+            finalCtx.drawImage(img, 0, 0);
+            finalCtx.globalCompositeOperation = 'destination-in';
+            finalCtx.drawImage(maskCanvas, 0, 0);
+
+            finalCanvas.toBlob(resolve, 'image/png');
+          });
+
+          selfieSegmentation.send({ image: img });
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function fitInCanvas(blob) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvasW = parseInt(document.getElementById('canvas-width').value) || 1500;
+          const canvasH = parseInt(document.getElementById('canvas-height').value) || 1500;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = canvasW;
+          canvas.height = canvasH;
+          const ctx = canvas.getContext('2d');
+
+          ctx.clearRect(0, 0, canvasW, canvasH);
+
+          const scale = Math.min(canvasW / img.width, canvasH / img.height);
+          const newW = img.width * scale;
+          const newH = img.height * scale;
+          const posX = (canvasW - newW) / 2;
+          const posY = (canvasH - newH) / 2;
+
+          ctx.drawImage(img, posX, posY, newW, newH);
+          canvas.toBlob(resolve, 'image/png');
+        };
+        img.src = URL.createObjectURL(blob);
+      });
+    }
+
+    function addPreviewCard(fileName, blob) {
+      const url = URL.createObjectURL(blob);
+      const card = document.createElement('div');
+      card.className = 'card';
+      
+      const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+      const finalName = `${nameWithoutExt}.png`;
+
+      card.innerHTML = `
+        <div class="card-preview">
+          <img src="${url}" alt="${finalName}">
+        </div>
+        <div class="card-name" title="${finalName}">${finalName}</div>
+      `;
+      document.getElementById('gallery').appendChild(card);
+    }
+
+    async function downloadAll() {
+      const zip = new JSZip();
+
+      processedFiles.forEach(fileObj => {
+        const nameWithoutExt = fileObj.name.substring(0, fileObj.name.lastIndexOf('.')) || fileObj.name;
+        const finalName = `${nameWithoutExt}.png`;
+        zip.file(finalName, fileObj.blob);
+      });
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(zipBlob);
+      a.download = "fotos_sem_fundo.zip";
+      a.click();
+    }
+  </script>
+</body>
+</html>
