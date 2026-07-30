@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Removedor HD eSports</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Importação oficial do Hugging Face Inference SDK -->
+    <script type="module">
+        import { HfInference } from "https://cdn.jsdelivr.net/npm/@huggingface/inference@2.8.0/+esm";
+        window.HfInference = HfInference;
+    </script>
     <style>
         :root {
             --primary: #8b5cf6;
@@ -236,7 +241,7 @@
 
     <div class="container">
         <h1>Removedor HD eSports</h1>
-        <p class="subtitle">Recorte HD (BRIA RMBG-1.4)</p>
+        <p class="subtitle">Recorte HD SDK (BRIA RMBG-1.4)</p>
 
         <!-- Seção Chave API -->
         <div class="token-card">
@@ -279,7 +284,7 @@
         <button class="btn-download-all" id="btnDownloadAll">⚡ Baixar Fotos Recortadas (.ZIP)</button>
     </div>
 
-    <script>
+    <script type="module">
         const fileInput = document.getElementById('fileInput');
         const progressBox = document.getElementById('progressBox');
         const progressBar = document.getElementById('progressBar');
@@ -329,39 +334,24 @@
             const targetW = parseInt(canvasWidthInput.value) || 1500;
             const targetH = parseInt(canvasHeightInput.value) || 1500;
 
+            // Inicializa o SDK oficial do Hugging Face
+            const hf = new window.HfInference(token);
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 statusText.innerText = `Processando jogador ${i + 1} de ${files.length}...`;
                 updateProgress((i / files.length) * 100);
 
                 try {
+                    // Otimiza levemente o arquivo para envio rápido sem perder nitidez
                     const optimizedBlob = await prepareImageBlob(file);
 
-                    // Proxy transparente para bypass de CORS em chamadas diretas
-                    const targetUrl = "https://api-inference.huggingface.co/models/briaai/RMBG-1.4";
-                    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
-
-                    const response = await fetch(proxyUrl, {
-                        headers: {
-                            "Authorization": `Bearer ${token}`,
-                            "Content-Type": "application/octet-stream"
-                        },
-                        method: "POST",
-                        body: optimizedBlob
+                    // Usa o SDK oficial integrado para contornar problemas de fetch direto
+                    const noBgBlob = await hf.imageSegmentation({
+                        model: "briaai/RMBG-1.4",
+                        data: optimizedBlob,
                     });
 
-                    if (!response.ok) {
-                        if (response.status === 503) {
-                            statusText.innerText = "Aguardando servidor de IA aquecer (5s)...";
-                            await new Promise(r => setTimeout(r, 5000));
-                            i--; 
-                            continue;
-                        }
-                        const errText = await response.text();
-                        throw new Error(`Erro na API (${response.status}): ${errText}`);
-                    }
-
-                    const noBgBlob = await response.blob();
                     const finalBlob = await resizeToCanvas(noBgBlob, targetW, targetH);
 
                     processedImages.push({
@@ -391,7 +381,7 @@
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
-                    const maxDim = 1500; // Mantém altíssima resolução HD
+                    const maxDim = 1500;
                     let w = img.width;
                     let h = img.height;
 
@@ -411,7 +401,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
 
-                    canvas.toBlob((blob) => resolve(blob), 'image/png');
+                    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9);
                 };
                 img.src = URL.createObjectURL(file);
             });
@@ -447,7 +437,7 @@
             const img = document.createElement('img');
             img.src = URL.createObjectURL(blob);
 
-            const label = document.label = document.createElement('div');
+            const label = document.createElement('div');
             label.className = 'file-name';
             label.innerText = filename;
 
