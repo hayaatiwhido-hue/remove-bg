@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Removedor HD eSports</title>
+    <title>Removedor HD eSports - Recorte Perfeito</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
             --bg: #0f172a;
             --surface: #1e293b;
             --text: #f8fafc;
             --text-muted: #94a3b8;
             --border: #334155;
             --success: #22c55e;
+            --success-hover: #16a34a;
         }
 
         * {
@@ -104,6 +106,11 @@
             font-weight: 600;
             cursor: pointer;
             text-align: center;
+            transition: opacity 0.2s;
+        }
+
+        .file-upload-btn:hover {
+            opacity: 0.9;
         }
 
         #fileInput { display: none; }
@@ -194,6 +201,11 @@
             cursor: pointer;
             margin-top: 1.2rem;
             display: none;
+            transition: background 0.2s;
+        }
+
+        .btn-download-all:hover {
+            background: var(--success-hover);
         }
     </style>
 </head>
@@ -201,7 +213,7 @@
 
     <div class="container">
         <h1>Removedor HD eSports</h1>
-        <p class="subtitle">Recorte seguro para uniformes claros e placas</p>
+        <p class="subtitle">Recorte IA de Precisão (Camisas Brancas e Placas)</p>
 
         <div class="grid-inputs">
             <div class="form-group">
@@ -222,7 +234,7 @@
 
         <div class="progress-box" id="progressBox">
             <div class="progress-text">
-                <span id="statusText">Processando...</span>
+                <span id="statusText">Iniciando IA...</span>
                 <span id="progressPercent">0%</span>
             </div>
             <div class="progress-bar-bg">
@@ -235,7 +247,14 @@
         <button class="btn-download-all" id="btnDownloadAll">⚡ Baixar Fotos Recortadas (.ZIP)</button>
     </div>
 
-    <script>
+    <!-- Script de IA do HuggingFace Transformers.js para remoção de fundo precisa -->
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+        // Configuração de ambiente para rodar leve no navegador
+        env.allowLocalModels = false;
+        env.backends.onnx.wasm.numThreads = 1;
+
         const fileInput = document.getElementById('fileInput');
         const progressBox = document.getElementById('progressBox');
         const progressBar = document.getElementById('progressBar');
@@ -246,7 +265,17 @@
         const canvasWidthInput = document.getElementById('canvasWidth');
         const canvasHeightInput = document.getElementById('canvasHeight');
 
+        let segmenter = null;
         let processedImages = [];
+
+        async function initAI() {
+            if (!segmenter) {
+                statusText.innerText = "Carregando modelo de IA...";
+                segmenter = await pipeline('image-segmentation', 'Xenova/birefnet-general', {
+                    quantized: true
+                });
+            }
+        }
 
         fileInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
@@ -260,14 +289,41 @@
             const targetW = parseInt(canvasWidthInput.value) || 1500;
             const targetH = parseInt(canvasHeightInput.value) || 1500;
 
+            try {
+                await initAI();
+            } catch (err) {
+                console.warn("Fallback para RMBG-1.4...", err);
+                try {
+                    segmenter = await pipeline('image-segmentation', 'Xenova/rmbg-1.4', { quantized: true });
+                } catch (e2) {
+                    alert("Erro ao inicializar a IA no navegador: " + e2.message);
+                    return;
+                }
+            }
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 statusText.innerText = `Recortando jogador ${i + 1} de ${files.length}...`;
-                updateProgress(((i + 0.1) / files.length) * 100);
+                updateProgress(((i) / files.length) * 100);
 
                 try {
-                    const img = await loadImage(file);
-                    const finalBlob = processSmartRemoval(img, targetW, targetH);
+                    const imageUrl = URL.createObjectURL(file);
+                    
+                    // Processa pela IA
+                    const output = await segmenter(imageUrl);
+                    
+                    // Pega a máscara recortada
+                    let maskBlob;
+                    if (Array.isArray(output) && output.length > 0) {
+                        maskBlob = await (await fetch(output[0].mask.toDataURL())).blob();
+                    } else if (output.mask) {
+                        maskBlob = await (await fetch(output.mask.toDataURL())).blob();
+                    } else {
+                        throw new Error("Formato de saída da IA inválido");
+                    }
+
+                    // Aplica no Canvas 1500x1500px
+                    const finalBlob = await compositeOnCanvas(imageUrl, maskBlob, targetW, targetH);
 
                     processedImages.push({
                         name: file.name.replace(/\.[^/.]+$/, "") + "_no_bg.png",
@@ -276,12 +332,15 @@
 
                     renderPreview(finalBlob, file.name);
                     updateProgress(((i + 1) / files.length) * 100);
+
+                    URL.revokeObjectURL(imageUrl);
                 } catch (error) {
-                    console.error("Erro na imagem:", file.name, error);
+                    console.error("Erro ao processar imagem:", file.name, error);
+                    alert(`Falha ao recortar a imagem ${file.name}: ${error.message}`);
                 }
             }
 
-            statusText.innerText = "Processamento Concluído!";
+            statusText.innerText = "Processamento Concluído com Sucesso!";
             btnDownloadAll.style.display = 'block';
         });
 
@@ -291,116 +350,51 @@
             progressPercent.innerText = p + '%';
         }
 
-        function loadImage(file) {
-            return new Promise((resolve, reject) => {
+        function compositeOnCanvas(originalUrl, maskBlob, targetW, targetH) {
+            return new Promise((resolve) => {
                 const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = URL.createObjectURL(file);
+                const mask = new Image();
+                let loaded = 0;
+
+                const onElemLoad = () => {
+                    loaded++;
+                    if (loaded === 2) {
+                        // 1. Canvas do tamanho original para aplicar a máscara da IA
+                        const w = img.width;
+                        const h = img.height;
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = w;
+                        tempCanvas.height = h;
+                        const tempCtx = tempCanvas.getContext('2d');
+
+                        // Desenha a imagem original
+                        tempCtx.drawImage(img, 0, 0, w, h);
+
+                        // Aplica a máscara como alpha de transparência
+                        tempCtx.globalCompositeOperation = 'destination-in';
+                        tempCtx.drawImage(mask, 0, 0, w, h);
+
+                        // 2. Transfere para o Canvas final com redimensionamento 1500x1500px
+                        const finalCanvas = document.createElement('canvas');
+                        finalCanvas.width = targetW;
+                        finalCanvas.height = targetH;
+                        const finalCtx = finalCanvas.getContext('2d');
+
+                        const scale = Math.min(targetW / w, targetH / h);
+                        const x = (targetW / 2) - (w / 2) * scale;
+                        const y = (targetH / 2) - (h / 2) * scale;
+
+                        finalCtx.drawImage(tempCanvas, x, y, w * scale, h * scale);
+                        finalCanvas.toBlob((blob) => resolve(blob), 'image/png');
+                    }
+                };
+
+                img.onload = onElemLoad;
+                mask.onload = onElemLoad;
+
+                img.src = originalUrl;
+                mask.src = URL.createObjectURL(maskBlob);
             });
-        }
-
-        function processSmartRemoval(img, targetW, targetH) {
-            const w = img.width;
-            const h = img.height;
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = w;
-            tempCanvas.height = h;
-            const ctx = tempCanvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-
-            const imgData = ctx.getImageData(0, 0, w, h);
-            const data = imgData.data;
-
-            // 1. Amostragem da cor de fundo nos 4 cantos
-            const samples = [
-                0, // Canto superior esquerdo
-                (w - 1) * 4, // Canto superior direito
-                ((h - 1) * w) * 4, // Canto inferior esquerdo
-                ((h - 1) * w + (w - 1)) * 4 // Canto inferior direito
-            ];
-
-            let bgR = 0, bgG = 0, bgB = 0;
-            samples.forEach(idx => {
-                bgR += data[idx];
-                bgG += data[idx + 1];
-                bgB += data[idx + 2];
-            });
-            bgR /= samples.length;
-            bgG /= samples.length;
-            bgB /= samples.length;
-
-            // 2. Flood fill a partir de todas as bordas externas (preserva o interior 100%)
-            const visited = new Uint8Array(w * h);
-            const queue = [];
-
-            for (let x = 0; x < w; x++) {
-                queue.push(x, 0);
-                queue.push(x, h - 1);
-            }
-            for (let y = 0; y < h; y++) {
-                queue.push(0, y);
-                queue.push(w - 1, y);
-            }
-
-            const threshold = 40; // Tolerância para capturar sombras leves do estúdio
-            let qHead = 0;
-
-            while (qHead < queue.length) {
-                const x = queue[qHead++];
-                const y = queue[qHead++];
-                const pos = y * w + x;
-
-                if (visited[pos]) continue;
-
-                const idx = pos * 4;
-                const r = data[idx];
-                const g = data[idx + 1];
-                const b = data[idx + 2];
-
-                // Distância da cor do fundo
-                const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
-
-                if (dist <= threshold) {
-                    visited[pos] = 1;
-                    data[idx + 3] = 0; // Transparente
-
-                    // Expande para os vizinhos imediatos
-                    if (x > 0 && !visited[pos - 1]) queue.push(x - 1, y);
-                    if (x < w - 1 && !visited[pos + 1]) queue.push(x + 1, y);
-                    if (y > 0 && !visited[pos - w]) queue.push(x, y - 1);
-                    if (y < h - 1 && !visited[pos + w]) queue.push(x, y + 1);
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-
-            // 3. Renderiza no canvas final 1500x1500px centralizado
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = targetW;
-            finalCanvas.height = targetH;
-            const finalCtx = finalCanvas.getContext('2d');
-
-            const scale = Math.min(targetW / w, targetH / h);
-            const destX = (targetW / 2) - (w / 2) * scale;
-            const destY = (targetH / 2) - (h / 2) * scale;
-
-            finalCtx.drawImage(tempCanvas, destX, destY, w * scale, h * scale);
-
-            const dataUrl = finalCanvas.toDataURL('image/png');
-            return dataURItoBlob(dataUrl);
-        }
-
-        function dataURItoBlob(dataURI) {
-            const byteString = atob(dataURI.split(',')[1]);
-            const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-            }
-            return new Blob([ab], {type: mimeString});
         }
 
         function renderPreview(blob, filename) {
